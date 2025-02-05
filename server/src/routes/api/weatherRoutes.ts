@@ -17,15 +17,16 @@ router.post('/', (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
+
   // TODO: GET weather data from city name
 
   // TODO: save city to search history
-});
 
-// TODO: GET search history
+  // TODO: GET search history
 router.get('/history', async (req, res) => {});
 
 // * BONUS TODO: DELETE city from search history
-router.delete('/history/:id', async (req, res) => {});
+router.delete('/history/:id', async (req, res) => {
+
 
 export default router;
