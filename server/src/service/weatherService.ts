@@ -65,7 +65,11 @@ class WeatherService {
   }
 
   private buildWeatherQuery(coordinates: Coordinates): string {
-    return `${this.baseURL}/data/2.5/weather?lat=${coordinates.lat}&lon=${coordinates.lon}&appid=${this.apiKey}&units=metric`;
+    return `${this.baseURL}/data/2.5/weather?lat=${coordinates.lat}&lon=${coordinates.lon}&appid=${this.apiKey}&units=imperial`;
+  }
+
+  private buildForecastQuery(coordinates: Coordinates): string {
+    return `${this.baseURL}/data/2.5/forecast?lat=${coordinates.lat}&lon=${coordinates.lon}&appid=${this.apiKey}&units=imperial`;
   }
 
   private async fetchAndDestructureLocationData(): Promise<Coordinates> {
@@ -81,6 +85,14 @@ class WeatherService {
     return await response.json();
   }
 
+  private async fetchForecastData(coordinates: Coordinates) {
+    const response = await fetch(this.buildForecastQuery(coordinates));
+    if (!response.ok) {
+      throw new Error(`Failed to fetch weather data: ${response.statusText}`);
+    }
+    return await response.json();
+  }
+
   private parseCurrentWeather(response: any): Weather {
     return new Weather(
       response.name,
@@ -88,8 +100,8 @@ class WeatherService {
       response.weather[0].description,
       response.main.humidity,
       response.weather[0].icon,
-      ((response.main.temp - 273.15) * 9) / 5 + 32, // Convert from Kelvin to Fahrenheit
-      response.wind.speed
+      response.main.temp,
+      response.wind.speed,
     );
   }
 
@@ -105,8 +117,8 @@ class WeatherService {
             item.weather[0].description,
             item.main.humidity,
             item.weather[0].icon,
-            ((item.main.temp - 273.15) * 9) / 5 + 32, // Convert to Fahrenheit
-            item.wind.speed
+            item.main.temp,
+            item.wind.speed,
           )
         );
       }
@@ -128,8 +140,14 @@ class WeatherService {
       // Parse the current weather
       const currentWeather = this.parseCurrentWeather(weatherData);
 
+      const forecastData = await this.fetchForecastData(coordinates);
+
+      const filterData = forecastData.list.filter((item: any) => {
+        return item.dt_txt.includes('9:00:00');
+      });
+
       // Build forecast array (if extended forecast is available)
-      return this.buildForecastArray(currentWeather, []);
+      return this.buildForecastArray(currentWeather, filterData);
     } catch (error) {
       console.error("Error fetching weather data:", error);
       throw error;
